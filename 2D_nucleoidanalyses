@@ -1,0 +1,116 @@
+AAA_outvec = zeros(21,size(A,2))
+AAA_euclideanNNDoutvec = zeros(11,size(A,2))
+AAA_thetaNNDoutvec = zeros(11,size(A,2))
+AAA_angularoutveck = zeros(360,size(A,2))
+ 
+RhoOutVec = zeros(1,60)
+ThetaOutVec = zeros(1,60)
+for k = 1:2:size(A,2)
+    rj = 1+k
+    rho = A(:,k)
+    Theta = A(:,rj);
+    rho(isnan(rho))=[]
+    Theta(isnan(Theta))=[]
+ 
+    %Calculate proportion of nucleoids in each 60Ëš wedge
+    Sextant = [sum(Theta>0 & Theta<60);sum(Theta>60 & Theta<120); sum(Theta>120 & Theta<180);sum(Theta>180 & Theta<240); sum(Theta>240 & Theta<300);sum(Theta>300 & Theta<360)];
+    SextantScaled = 100*(Sextant/sum(Sextant));
+    MeanCheckShouldbe16=mean(SextantScaled);
+    SextStandard = std(SextantScaled)
+    STDLabel = ["Standard Deviation Per Sextant"] ;
+ 
+    %All of the angular/circular readouts
+    A1=deg2rad(Theta);
+    [Alpha_Mean low95 high95]= circ_mean(A1);
+    ResVectAngle = circ_rad2ang(Alpha_Mean);
+    Low95 = circ_rad2ang(low95);
+    High95 = circ_rad2ang(high95);
+    Alpha_Median=circ_rad2ang(circ_median(A1));
+    ResultVectorLength = circ_r(A1);
+    CircularVariance = circ_var(A1);
+    CircStandard = circ_std(A1);
+    Skewness = circ_skewness(A1);
+    Kurtosis = circ_kurtosis(A1);
+    Titles = ["Standard Deviation per 60" "Mean Resultant Vector Angle" "95% low" "95% high" "Median direction" "Resultant Vector Length" "Circular Variance" "Angular Deviation" "Circular skewness" "Circular kurtosis"];
+    Output = [std(SextantScaled) ResVectAngle High95 Low95 Alpha_Median ResultVectorLength CircularVariance CircStandard  Skewness Kurtosis];
+    zAngularInfo = [Titles;Output];
+ 
+    %all of the Radial Info
+    RMean = mean(rho);
+    RMedian = median(rho);
+    RSTDev = std(rho);
+    RIQR = iqr(rho);
+    p=[5,95];
+    R5to95=range(prctile(rho,p));
+    RSkew = skewness(rho);
+    RKurtosis = kurtosis (rho);
+    RTitle = ["R Mean" "R Median" "R STDev" "R IQR" "R 5to95" "R Skew" "R Kurtosis"];
+    RFinal = [RMean RMedian RSTDev RIQR R5to95 RSkew RKurtosis];
+    zRadialInfo = [RTitle;RFinal];
+ 
+    %Rolling Asymmetry index 1Ëš itterations
+    SStart = linspace(0,179,180);
+    SEnd = linspace (180,359,180);
+    Side1 = sum(Theta>SStart & Theta<SEnd);
+    TotalDNA = numel(Theta);
+    Proportion1 = Side1/TotalDNA;
+    Proportion2 = 1-Proportion1;
+    Full = [Proportion1 Proportion2];
+    Fullx = linspace(0,359,360);
+    AsymmMean = mean(Full);
+    Varmeanas = var(Full);
+    SDAsym = std(Full);
+    AsymOutput = [AsymmMean SDAsym Varmeanas];
+    AsymTitles = ["Mean Assymetry" "SD Asymm" "Asymmetry Variance"];
+    zAsymmetry = [AsymTitles;AsymOutput];
+    
+   
+ 
+    %Angular Nearest Neighbor Distance
+    [Cartx, Carty] = pol2cart(A1,rho);
+    Cartxy = [Cartx Carty];
+    [NND_D,NND_I] = pdist2(Cartxy,Cartxy,"cosine","Smallest",11);
+    NND_Da = rad2deg(NND_D);
+    MeanNNDa = nanmean(NND_Da,2);
+    STDNNDa = nanstd(NND_Da,[],2);
+    VarNNDa = nanvar(NND_Da,[],2);
+    Std2MeanAng = STDNNDa./MeanNNDa;
+    Var2MeanAng = VarNNDa./MeanNNDa;
+    zNNDVar2MeanTitle = ["Theta Mean" "Theta SD" "Theta Var" "Theta SD-to-mean" "Theta Variance-to-mean"]
+    zNND_Theta = [MeanNNDa STDNNDa VarNNDa Std2MeanAng Var2MeanAng]
+    zVar2meanangoutput = [zNNDVar2MeanTitle;zNND_Theta];
+ 
+    %Euclidean Nearest Neighbor Distance
+    [NNDcartd, NNDcarti] = pdist2(Cartxy,Cartxy,"euclidean","smallest",11);
+    CartMeanNND = nanmean(NNDcartd,2);
+    CartVarNND = nanvar(NNDcartd,[],2);
+    CartSTDNND = nanstd(NNDcartd,[],2);
+    Cartvar2mean = CartVarNND./CartMeanNND;
+    CartSD2mean = CartSTDNND./CartMeanNND;
+    EuclideanNNDtitles = ["Euclidean Mean" "Euclidean SD" "Euclidean Var" "Euclidean SD-to-mean" "Euclidean Variance-to-mean"]
+    EuclideanNND_factors = [CartMeanNND CartSTDNND CartVarNND CartSD2mean Cartvar2mean]
+    Euclidean_Neighbor_Dist = [EuclideanNNDtitles;EuclideanNND_factors]
+ 
+ 
+    %mass center shift
+    MeanX = mean(Cartx)
+    MeanY = mean(Carty)
+    MassShift = sqrt(MeanX^2+MeanY^2)
+    
+    AOutput = [std(SextantScaled) ResVectAngle High95 Low95 Alpha_Median ResultVectorLength CircularVariance CircStandard  Skewness Kurtosis RMean RMedian RSTDev RIQR R5to95 RSkew RKurtosis AsymmMean SDAsym Varmeanas MassShift]
+    AAAtitle = ["Standard Deviation per 60" "Mean Resultant Vector Angle" "95% low" "95% high" "Median direction" "Resultant Vector Length" "Circular Variance" "Angular Deviation" "Circular skewness" "Circular kurtosis" "R Mean" "R Median" "R STDev" "R IQR" "R 5to95" "R Skew" "R Kurtosis" "Mean Assymetry" "SD Asymm" "Asymmetry Variance" "Mass center displacement"]
+    
+    AAA_outvec(:,k) = AOutput
+    AAAeuclideanNNDoutvec(:,k)=Cartvar2mean
+    AAAthetaNNDoutvec(:,k) = Var2MeanAng
+    AAA_angularoutveck(:,k) = Full'
+end
+ 
+ENeighbor=["ENND0" "ENND1" "ENND2" "ENND3" "ENND4" "ENND5" "ENND6" "ENND7" "ENND8" "ENND9" "ENND10"]'
+ANeighbor=["ANND0" "ANND1" "ANND2" "ANND3" "ANND4" "ANND5" "ANND6" "ANND7" "ANND8" "ANND9" "ANND10"]'
+AAA_all_Neat = [AAAtitle' AAA_outvec(:,1:2:end)]
+AAA_Euclideanneat = [ENeighbor AAAeuclideanNNDoutvec(:,1:2:end)]
+AAA_ThetaNeat=[ANeighbor AAAthetaNNDoutvec(:,1:2:end)]
+AAA_AsymNeat = [AAA_angularoutveck(:,1:2:end)] 
+ 
+ 
