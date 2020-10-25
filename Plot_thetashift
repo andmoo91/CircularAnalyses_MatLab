@@ -1,0 +1,12 @@
+for j = 1:21
+    n=A(:,j);
+    n(isnan(n))=[];
+    pts = linspace(0,180,181);
+    [f,x]=ksdensity(n,pts,"function","cdf");
+    c = [1-(j/42) .5 j/21]
+    plot(x,f,"LineWidth",1,"Color",c)
+    hold on
+    grid on
+    comap(:,j)=c
+   
+end
