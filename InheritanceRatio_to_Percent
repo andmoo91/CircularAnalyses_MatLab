@@ -1,0 +1,19 @@
+for j = 1:21
+    n=A(:,j)
+    SideA = (95.*n)./(n+1)
+    SideB = 95 - SideA
+    AoverAB = SideA./(SideA+SideB)
+    pts = linspace(0,1,60)
+    D = AoverAB+0.0000001
+    [f,x]=ksdensity(D,pts)
+    plot(x,f)
+    hold on
+    Converted(:,j)= AoverAB
+    MeanEach = mean(AoverAB)
+    STDEach = std(AoverAB)
+    ConvertedMean(:,j)=MeanEach
+    ConvertedSTD(:,j)=STDEach
+    SEM = std(AoverAB)/sqrt(length(AoverAB));  % Standard Error
+    ts = tinv([0.025  0.975],length(AoverAB)-1);      % T-Score
+    CI = mean(AoverAB) + ts*SEM; 
+    Converted95(:,j)=CI
