@@ -1,0 +1,65 @@
+%% This accessess the folders where I stored the ultimate points and the distance maps
+close all
+ 
+myFolder = ''; % specify folder path containing ultimate points
+myFolder2 = ''; % specify folder path containuing euclidean distance maps
+filePattern = fullfile(myFolder,'*.tif'); % ultimate points
+filePattern2 = fullfile(myFolder2,'*.tif'); % EDMS
+theFiles = dir(filePattern); %UPs
+theFiles2 = dir(filePattern2); %EDMs
+ 
+figure
+ 
+for k=1:length(theFiles)
+    baseFileName = theFiles(k).name;
+    fullFileName = fullfile(theFiles(k).folder, baseFileName);
+    baseFileName2 = theFiles2(k).name;
+    fullFileName2 = fullfile(theFiles2(k).folder,baseFileName2);
+    fprintf(1,"Now reading %s\n", fullFileName);
+    fprintf(1,"Now readins %s\n", fullFileName2);
+    imageArray = imread(fullFileName);
+    imageArray2 = imread(fullFileName2);
+    
+    %% now i get pixel size info. they should be the same so i only read
+    % from the first to save space
+
+    pixinfo = imfinfo(fullFileName);
+    pixsize=pixinfo.YResolution;
+    pixelsize = 1/pixsize;
+    %figure
+    %imagesc(imageArray)
+    %turbomap
+    %colormap(gca,turbo)
+    %colorbar
+    %figure
+    %imagesc(imageArray2)
+    %colormap(gca,turbo)
+    %colorbar
+    %imshow(imageArray); %display the image. I commented it out but I like to see it at first to make sure things are being read properly
+    Ultimate = imageArray;
+    EDM = imageArray2;
+    Ult_EDM = Ultimate.*EDM; %here i finally multtiply the images by one another to get the EDM local maxima
+    %figure
+    %imagesc(Ult_EDM)
+    [X Y V]=find(Ult_EDM);
+    V(isnan(V))=[]; %this gets rid of any nan values that might have snuck in there for some reason
+    Xmax = max(X)-2;
+    Xmin = min(X)+2;
+    Ymax = max(Y)-2;
+    Ymin = min(Y)+2; %thes operations just find the edges and erodes the image by 2pix to remove all of thhe edge pixels
+
+    FilteredV = V(X<Xmax & X>Xmin & Y<Ymax & Y>Ymin);
+    FilteredX = X(X<Xmax & X>Xmin & Y<Ymax & Y>Ymin);
+    FilteredY = Y(X<Xmax & X>Xmin & Y<Ymax & Y>Ymin); %these simply filter out edge values
+    FilteredV = double(FilteredV)
+    ScaledV = FilteredV*pixelsize;
+    ScaledX = FilteredX*pixelsize;
+    ScaledY = FilteredY*pixelsize;
+    
+    EDMValues(1:length(ScaledV),k)=ScaledV;
+ 
+    c=1000*ScaledV
+    scatter(ScaledX,ScaledY,c,ScaledV,"filled")
+    colorbar
+    hold on
+end
